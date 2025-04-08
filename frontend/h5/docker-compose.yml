@@ -1,0 +1,8 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: some_nginx
+    ports:
+      - "9090:80"
+    volumes:
+      - /home/chris/order_h5/work:/usr/share/nginx/html

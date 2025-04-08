@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>本日店家</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel="stylesheet" href="/css/bootstrap.min.css" crossorigin="anonymous">
+    <script type="text/javascript" src="/lib/axios.min.js"></script>
+    <script type="text/javascript" src="/lib/knockout-min.js"></script>
+    <script type="text/javascript" src="/lib/common.js"></script>
+</head>
+
+<body>
+    <div style="padding: 2em;">
+        <!-- ko foreach: common_button -->
+        <a class="btn btn-primary" tabindex="-1" role="button" aria-disabled="true" data-bind="text: label,attr: { href: url}">&nbsp;</a>
+        <!-- /ko -->
+        <a class="btn btn-danger" tabindex="-1" role="button" aria-disabled="true" href="/">登出</a>
+    </div>
+    <div class="container">
+        <!-- <form id="myForm" onsubmit="validateForm(event)">
+            <div class="form-group">
+                <label for="username">店家名稱：</label>
+                <input type="text" id="username" name="username" required value="a123456">
+                <div id="username-error" class="error"></div>
+            </div>
+            <div class="form-group">
+                <label for="password">密碼：</label>
+                <input type="password" id="password" name="password" required value="123456">
+                <div id="password-error" class="error"></div>
+            </div>
+            <div style="text-align: center;">
+                <button type="submit" style="margin-right: 2em;">送出</button>
+            </div>
+        </form> -->
+    </div>
+
+    <script>
+        var model = JSON.parse(sessionStorage.getItem("common"));
+        model["common_button"] = getCommonButton(model.Menu) ; 
+        
+        var stop = false;
+
+        // 讀取今日開放店家
+
+        ko.applyBindings(model) ;
+    </script>
+</body>
+
+</html>

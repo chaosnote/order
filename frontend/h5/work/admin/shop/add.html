@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>增加店家</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel="stylesheet" href="/css/bootstrap.min.css" crossorigin="anonymous">
+    <script type="text/javascript" src="/lib/axios.min.js"></script>
+    <script type="text/javascript" src="/lib/knockout-min.js"></script>
+    <script type="text/javascript" src="/lib/common.js"></script>
+    <script type="text/javascript" src="/lib/validate.js"></script>
+</head>
+
+<body>
+    <div style="padding: 2em;">
+        <!-- ko foreach: common_button -->
+        <a class="btn btn-primary" tabindex="-1" role="button" aria-disabled="true" data-bind="text:label,attr:{href: url}">&nbsp;</a>
+        <!-- /ko -->
+        <a class="btn btn-danger" tabindex="-1" role="button" aria-disabled="true" href="/">登出</a>
+    </div>
+    <div class="container">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">店家名稱：</span>
+            </div>
+            <input type="text" class="form-control" style="border-right:none" aria-describedby="basic-addon3" data-bind="value:shop.name,css:{'text-danger':shop.name_error}">
+            <div class="input-group-prepend">
+                <span class="input-group-text">電話 : </span>
+            </div>
+            <input type="text" class="form-control" aria-describedby="basic-addon3" data-bind="value:shop.mobile,css:{'text-danger':shop.mobile_error}">
+            <div class="input-group-append">
+                <button class="btn btn-warning" type="button" data-bind="click: onAddItem">增加菜單</button>
+                <button class="btn btn-success" type="button" data-bind="click: onSubmit">送出</button>
+            </div>
+        </div>
+        <!-- ko foreach:shop.list -->
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">名稱：</span>
+            </div>
+            <input type="text" class="form-control" style="border-right:none" aria-describedby="basic-addon3" data-bind="value:name,css:{'text-danger':name_error}">
+            <div class="input-group-prepend">
+                <span class="input-group-text">價格：</span>
+            </div>
+            <input type="number" class="form-control" aria-describedby="basic-addon3" data-bind="value:price,css:{'text-danger':price_error}">
+            <div class="input-group-append">
+                <button class="btn btn-danger" type="button" data-bind="click: $root.onDelItem">取消</button>
+            </div>
+        </div>
+        <!-- /ko -->
+    </div>
+
+    <script>
+        var model = JSON.parse(sessionStorage.getItem("common"));
+        model.common_button = getCommonButton(model.Menu) ; 
+        model.shop = {
+            name:ko.observable(""),
+            name_error:ko.observable(false),
+            mobile:ko.observable(""),
+            mobile_error:ko.observable(false),
+            list:ko.observableArray([]),
+        } ;        
+        model.onAddItem = ()=>{
+            model.shop.list.push({
+                name:ko.observable(""),
+                price:ko.observable(""),
+                name_error:ko.observable(false),
+                price_error:ko.observable(false),
+            }) ;
+        }
+
+        if (true){
+            var tmp = model["shop"] ;
+            tmp.name("店家名稱00") ;
+            tmp.mobile("012345678") ;
+            model.shop.list.push({
+                name:ko.observable("白菜"),
+                price:ko.observable("30"),
+                name_error:ko.observable(false),
+                price_error:ko.observable(false),
+            }) ;
+        }
+
+        model.onDelItem = function(){
+            model.shop.list.remove(this);
+        }
+
+        let stop = false;
+        const tip_message = "empty" ;
+        model.onSubmit = ()=>{
+            if(stop) return ;
+
+            let shop_name = model.shop.name() ;
+            let shop_mobile = model.shop.mobile() ;
+            let _trash = [] ;
+            let _result = [] ;
+
+            model.shop.name_error(false) ;
+            model.shop.mobile_error(false) ;
+            if(!validateShopName(shop_name)||shop_name == tip_message){
+                if(shop_name.length == 0){
+                    model.shop.name(tip_message) ;
+                }
+                model.shop.name_error(true) ;
+                return
+            }
+            if(!validateShopMobile(shop_mobile)||shop_mobile == tip_message){
+                if(shop_mobile.length == 0){
+                    model.shop.mobile(tip_message) ;
+                }
+                model.shop.mobile_error(true) ;
+                return
+            }
+
+            let flag = false ;
+            model.shop.list().forEach(item => {
+                let name = item.name() ;
+                let price = item.price() ;
+                if( name.length == 0 && price.length == 0) {
+                    _trash.push(item) ;
+                    return ;
+                }
+                item.name_error(false) ;
+                item.price_error(false) ;
+                if(!validateItemName(name)||name == tip_message){
+                    if(name.length == 0){
+                        item.name(tip_message) ;
+                    }
+                    item.name_error(true) ;
+                    flag = true ;
+                    return;
+                }
+                if(!validateItemPrice(price)||price=="0"){
+                    if(price.length == 0){
+                        item.price("0") ;
+                    }
+                    item.price_error(true) ;
+                    flag = true ;
+                    return;
+                }
+                _result.push({
+                    name:name,
+                    price:price
+                }) ;
+            });
+
+            _trash.forEach(item=>{
+                model.shop.list.remove(item);
+            }) ;
+
+            if(_result.length==0){
+                alert("未設置菜單")
+                return;
+            }
+
+            if(flag) return ;
+
+            stop = true ;
+            const content = {
+                shop_name: `${shop_name}`,
+                shop_mobile: `${shop_mobile}`,
+                list : _result
+            };
+
+            console.log("token",model.Token) ;
+            if(model.Token.length==0){
+                window.location.href = "/" ;
+                return;
+            }
+
+            const api_url = `http://192.168.0.105:8080/api/admin/shop/add?token=${model.Token}` ;
+            // axios.post(api_url, content, {headers:{"token":model.Token}})
+            axios.post(api_url, content)
+                .then(response => {
+                    if (response.data.Code != "OK") {
+                        alert("增加店家失敗") ;
+                        return ;
+                    }
+                    console.log('回應資料:', response.data);
+                    window.location.href = "/admin/shop/list.html";
+                })
+                .catch(error => {
+                    if (error.response) {
+                        // 伺服器有回應，但狀態碼不在 2xx 範圍內
+                        console.error('回應錯誤:', error.response.data);
+                        console.error('回應狀態碼:', error.response.status);
+                        console.error('回應標頭:', error.response.headers);
+                    } else if (error.request) {
+                        // 請求發送出去但沒有收到回應
+                        console.error('沒有收到回應:', error.request);
+                    } else {
+                        // 在設置請求時發生錯誤
+                        console.error('請求設置錯誤:', error.message);
+                    }
+                    window.location.href = "/" ;
+                })
+                .finally(() => {
+                    // 無論成功或失敗都會執行的程式碼 (可選)
+                    console.log('POST 請求完成。');
+                    stop = false ;
+                });
+        } ;
+
+        ko.applyBindings(model) ;
+    </script>
+</body>
+
+</html>

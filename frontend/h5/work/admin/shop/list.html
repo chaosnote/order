@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>增加店家</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel="stylesheet" href="/css/bootstrap.min.css" crossorigin="anonymous">
+    <script type="text/javascript" src="/lib/axios.min.js"></script>
+    <script type="text/javascript" src="/lib/knockout-min.js"></script>
+    <script type="text/javascript" src="/lib/common.js"></script>
+    <script type="text/javascript" src="/lib/validate.js"></script>
+</head>
+
+<body>
+    <div style="padding: 2em;">
+        <!-- ko foreach: common_button -->
+        <a class="btn btn-primary" tabindex="-1" role="button" aria-disabled="true" data-bind="text:label,attr:{href: url}">&nbsp;</a>
+        <!-- /ko -->
+        <a class="btn btn-danger" tabindex="-1" role="button" aria-disabled="true" href="/">登出</a>
+    </div>
+    <div class="container">
+        <div class="input-group mb-3">
+            <div class="form-control" style="border-right:none">挑選本日點餐店家</div>
+            <div class="input-group-append">
+                <button class="btn btn-primary" type="button" data-bind="click: $root.onSubmit">送出</button>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <!-- ko foreach: shop -->
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">店家名稱 : </span>
+            </div>
+            <div class="form-control" style="border-right:none" data-bind="text:name">測試</div>
+            <div class="input-group-prepend" >
+                <span class="input-group-text">電話 : </span>
+            </div>
+            <div class="form-control" style="border-right:none" data-bind="text:mobile">0123456789</div>
+            <div class="input-group-prepend">
+                <div class="input-group-text">
+                    <input type="checkbox" aria-label="Checkbox for following text input" data-bind="checked:pick">
+                </div>
+            </div>
+            <div class="input-group-append">
+                <button class="btn btn-success" type="button" data-bind="click: $root.onEdit">編輯</button>
+            </div>
+        </div>
+        <!-- /ko -->
+    </div>
+
+    <script>
+        var model = JSON.parse(sessionStorage.getItem("common"));
+        model.common_button = getCommonButton(model.Menu) ;
+        model.shop = ko.observableArray([]) ;
+        model.onEdit = function(){
+            console.log(this) ;
+        }
+        model.onSubmit = ()=>{
+            model.shop().forEach(item => {
+                console.log(item.pick()) ;
+                // item
+            }) ;
+        }
+
+        const api_url = `http://192.168.0.105:8080/api/admin/shop/get?token=${model.Token}` ;
+            axios.post(api_url)
+                .then(response => {
+                    if (response.data.Code != "OK") {
+                        alert("請求失敗") ;
+                        return ;
+                    }
+                    console.log('回應資料:', response.data.Content["list"]);
+                    let src = response.data.Content["list"] ;
+                    let res = [] ;
+                    src.forEach(item=>{
+                        let tmp = {
+                            uuid : item.UUID ,
+                            name : item.Name ,
+                            mobile : item.Mobile ,
+                            pick : ko.observable(false),
+                            actived : item.Actived == 1,
+                        } 
+                        res.push(tmp) ;
+                    })
+                    model["shop"] = ko.observableArray(res)
+                })
+                .catch(error => {
+                    if (error.response) {
+                        // 伺服器有回應，但狀態碼不在 2xx 範圍內
+                        console.error('回應錯誤:', error.response.data);
+                        console.error('回應狀態碼:', error.response.status);
+                        console.error('回應標頭:', error.response.headers);
+                    } else if (error.request) {
+                        // 請求發送出去但沒有收到回應
+                        console.error('沒有收到回應:', error.request);
+                    } else {
+                        // 在設置請求時發生錯誤
+                        console.error('請求設置錯誤:', error.message);
+                    }
+                    window.location.href = "/";
+                })
+                .finally(() => {
+                    ko.applyBindings(model) ;
+                });
+    </script>
+</body>
+
+</html>

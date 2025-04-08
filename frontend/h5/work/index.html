@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>登入</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 300px;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+    <script type="text/javascript" src="/lib/axios.min.js"></script>
+    <script type="text/javascript" src="/lib/validate.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <form id="myForm" onsubmit="validateForm(event)">
+            <div class="form-group">
+                <label for="username">使用者名稱：</label>
+                <input type="text" id="username" name="username" required value="a123456">
+                <div id="username-error" class="error"></div>
+            </div>
+            <div class="form-group">
+                <label for="password">密碼：</label>
+                <input type="password" id="password" name="password" required value="123456">
+                <div id="password-error" class="error"></div>
+            </div>
+            <div style="text-align: center;">
+                <button type="submit" style="margin-right: 2em;">登入</button>
+                <a href="/register.html">註冊</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        sessionStorage.clear();
+
+        var stop = false;
+        function validateForm(event) {
+            if (stop) {
+                return;
+            }
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const usernameError = document.getElementById('username-error');
+            const passwordError = document.getElementById('password-error');
+
+            event.preventDefault(); // 阻止表單提交
+
+            var flag = true;
+            if (!validateUserName(usernameInput.value)) {
+                usernameError.textContent = '使用者名稱格式不正確';
+                flag = false;
+            } else {
+                usernameError.textContent = '';
+            }
+
+            if (!validatePassword(passwordInput.value)) {
+                passwordError.textContent = '密碼格式不正確';
+                flag = false;
+            } else {
+                passwordError.textContent = '';
+            }
+
+            if (!flag) {
+                return;
+            }
+            
+            stop = true ;
+            const content = {
+                name: `${usernameInput.value}`,
+                password: `${passwordInput.value}`
+            };
+
+            const api_url = "http://192.168.0.105:8080/api/user/login" ;
+            
+            axios.post(api_url, content)
+                .then(response => {
+                    if (response.data.Code != "OK") {
+                        alert("登入失敗") ;
+                        return ;
+                    }
+                    console.log('回應資料:', response.data);
+                    sessionStorage.setItem("common", JSON.stringify(response.data.Content));
+                    window.location.href = "/user/shop_list.html";
+                })
+                .catch(error => {
+                    if (error.response) {
+                        // 伺服器有回應，但狀態碼不在 2xx 範圍內
+                        console.error('回應錯誤:', error.response.data);
+                        console.error('回應狀態碼:', error.response.status);
+                        console.error('回應標頭:', error.response.headers);
+                    } else if (error.request) {
+                        // 請求發送出去但沒有收到回應
+                        console.error('沒有收到回應:', error.request);
+                    } else {
+                        // 在設置請求時發生錯誤
+                        console.error('請求設置錯誤:', error.message);
+                    }
+                    window.location.href = "/";
+                })
+                .finally(() => {
+                    // 無論成功或失敗都會執行的程式碼 (可選)
+                    console.log('POST 請求完成。');
+                    stop = false ;
+                });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,40 @@
+services:
+  mariadb:
+    image: mariadb:10.11
+    container_name: some_mariadb
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_USER: chris
+      MARIADB_PASSWORD: 123456
+      MARIADB_DATABASE: simulate
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "1"
+    volumes:
+      - /home/chris/data_store:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+
+  redis:
+    image: redis:4.0.2-alpine
+    container_name: some_redis
+    ports:
+      - "6379:6379"
+
+  golang-app:
+    image: golang:1.24-bullseye
+    container_name: some-golang
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    working_dir: /app
+    volumes:
+      - /home/chris/order_golang/work:/app
+    ports:
+      - "8080:8080"
+    command: "/app/dist/order"
